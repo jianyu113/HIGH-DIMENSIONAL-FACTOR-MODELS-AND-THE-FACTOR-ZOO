@@ -62,13 +62,13 @@ def volatility_6m(panel):
 
 def turnover_proxy(panel):
     tmp = panel.sort_values(["etf_id", "Date"]).copy()
-    tmp["turnover"] = tmp["Adj Close"] * tmp["Volume"]
-    return tmp[["Date", "etf_id", "turnover"]]
+    tmp["turnover_proxy"] = tmp["Adj Close"] * tmp["Volume"]
+    return tmp[["Date", "etf_id", "turnover_proxy"]]
 
 def size_factor(panel):
     tmp = panel.sort_values(["etf_id", "Date"]).copy()
-    tmp["size"] = np.log(tmp["Adj Close"] * tmp["Volume"] + 1.0)
-    return tmp[["Date", "etf_id", "size"]]
+    tmp["size_factor"] = np.log(tmp["Adj Close"] * tmp["Volume"] + 1.0)
+    return tmp[["Date", "etf_id", "size_factor"]]
 
 def amihud(panel):
     tmp = panel.sort_values(["etf_id", "Date"]).copy()
@@ -126,8 +126,6 @@ def momentum_12m(panel):
     tmp["r_1m"] = tmp.groupby("etf_id")["Adj Close"].pct_change()
     r_shift = tmp.groupby("etf_id")["r_1m"].shift(1)
 
-    def _cum_ret(x):
-        return (1 + x).prod() - 1
     tmp["momentum_12m"] = (
         r_shift
         .groupby(tmp["etf_id"])

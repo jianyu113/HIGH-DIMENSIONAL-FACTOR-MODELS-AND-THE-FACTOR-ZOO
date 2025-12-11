@@ -1,26 +1,19 @@
 from get_data import *
-from get_alpha_values import *
+from get_factor_value import *
 from tensorly.decomposition import parafac
 import tensorly as tl
+import matplotlib.pyplot as plt
+
 
 etf_id = [
-    "SPY","IVV","VOO",
-    "QQQ","IWM","DIA",
-    "EFA","EEM","EWJ",
-    "XLK","XLF","XLY","XLP","XLI","XLE","XLV","XLU","XLB",
-    "TLT","IEF","SHY",
-    "GLD","SLV","USO",
-    "MTUM","QUAL","SIZE","USMV","VLUE",
+    "SPY","IVV","VOO","QQQ","IWM","DIA","EFA","EEM","EWJ","XLK","XLF","XLY","XLP","XLI","XLE","XLV","XLU","XLB","TLT","IEF","SHY","GLD","SLV","USO","MTUM","QUAL","SIZE","USMV","VLUE",
 ]
 
 factor_names = [
-    "past_1m_return",
-    "past_3m_return",
-    "past_6m_return",
-    "volatility_3m",
-    "volatility_6m",
-    "turnover",
-    "size",
+    "past_1m_return","past_3m_return","past_6m_return",
+    "volatility_3m","volatility_6m",
+    "turnover_proxy",
+    "size_factor",
     "amihud",
     "beta_6m",
     "sharpe_6m",
@@ -72,10 +65,7 @@ factor_cols = [c for c in factor_df.columns if c not in ["Date", "etf_id"]]
 
 factor_cols = [c for c in factor_df.columns if c not in ["Date", "etf_id"]]
 # zscore
-factor_df[factor_cols] = (
-    factor_df.groupby("Date")[factor_cols]
-             .transform(lambda x: (x - x.mean()) / x.std())
-)
+factor_df[factor_cols] = (factor_df.groupby("Date")[factor_cols].transform(lambda x: (x - x.mean()) / x.std()))
 
 factor_df[factor_cols] = factor_df[factor_cols].fillna(0)
 tensor = df_to_tensor(factor_df)  # shape (120, 29, 12)
@@ -95,6 +85,27 @@ rank = feature_factor.shape[1]
 latent_names = [f"F{k+1}" for k in range(rank)]
 beta_df = pd.DataFrame(feature_factor, index=factor_names, columns=latent_names)
 print(beta_df.round(3))
+
+# draw plt
+dates = np.sort(factor_df["Date"].unique())
+factor_names = ["F1", "F2", "F3", "F4"]
+lambda_df = pd.DataFrame(
+    time_factor,
+    index=dates,
+    columns=factor_names
+)
+plt.figure(figsize=(10, 8))
+
+for i, f in enumerate(factor_names, 1):
+    plt.subplot(4, 1, i)
+    lambda_df[f].plot()
+    plt.title(f"{f} over 10 years")
+    plt.xlabel("")
+    plt.tight_layout()
+
+plt.show()
+
+
 
 #if __name__ == '__main__':
     #past_1m_return()
