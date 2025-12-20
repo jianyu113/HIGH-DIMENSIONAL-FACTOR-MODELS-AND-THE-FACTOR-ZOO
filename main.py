@@ -45,15 +45,8 @@ def build_factor_df(panel):
     return base
 
 def df_to_tensor(factor_df):
-    X = (
-        factor_df
-        .pivot(index="Date", columns="etf_id")
-    )
-    X = X.to_numpy().reshape(
-        factor_df["Date"].nunique(),
-        factor_df["etf_id"].nunique(),
-        -1
-    )
+    X = (factor_df.pivot(index="Date", columns="etf_id"))
+    X = X.to_numpy().reshape(factor_df["Date"].nunique(),factor_df["etf_id"].nunique(),-1)
     return X
 
 factor_df = build_factor_df(panel)
@@ -74,7 +67,7 @@ print(np.isnan(tensor).sum())
 tl.set_backend('numpy')
 
 #cp = parafac(tensor, rank=5)
-cp = parafac(tensor, rank=4)  # change rank to 5
+cp = parafac(tensor, rank=4)  # change rank to 4
 
 weights, factor_mats = cp
 time_factor = factor_mats[0]
@@ -105,7 +98,55 @@ for i, f in enumerate(factor_names, 1):
 
 plt.show()
 
+# PCA(baseline)
+from sklearn.decomposition import PCA
+import numpy as np
+import pandas as pd
+
+# tensor: shape (T, N, C)
+T, N, C = tensor.shape
+
+# flatten pannel
+X_pca = tensor.reshape(T, N * C)
+
+# take same dimensions as TFM
+pca = PCA(n_components=4)
+pca_factors = pca.fit_transform(X_pca)   # shape (T, 4)
+
+# plotting
+pca_df = pd.DataFrame(
+    pca_factors,
+    index=dates,
+    columns=["PC1", "PC2", "PC3", "PC4"]
+)
+
+print(pca.explained_variance_ratio_)
+print(pca_df.head())
+print("Explained variance:", pca.explained_variance_ratio_)
+print("Cumulative:", pca.explained_variance_ratio_.cumsum())
+
+plt.figure(figsize=(10, 8))
+for i in range(4):
+    plt.subplot(4, 1, i+1)
+    pca_df.iloc[:, i].plot()
+    plt.title(f"PC{i+1}")
+    plt.tight_layout()
+plt.show()
+
+# We now have two sets of time factors
+# structural comparison to show they were not capturing the same underlying economic dimensions
+
+# compute the correlation matrix
+# align on dates
+common_dates = lambda_df.index.intersection(pca_df.index)
+F = lambda_df.loc[common_dates]
+PC = pca_df.loc[common_dates]
+
+# calaulate correlation matrix (Tensor factors vs PCA factors)
+combined = pd.concat([F, PC], axis=1)
+corr_full = combined.corr()
+corr_matrix = corr_full.loc[F.columns, PC.columns]
 
 
-#if __name__ == '__main__':
-    #past_1m_return()
+
+print(corr_matrix.round(2))
