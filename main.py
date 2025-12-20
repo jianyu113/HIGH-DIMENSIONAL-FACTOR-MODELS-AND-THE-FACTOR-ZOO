@@ -147,6 +147,4 @@ combined = pd.concat([F, PC], axis=1)
 corr_full = combined.corr()
 corr_matrix = corr_full.loc[F.columns, PC.columns]
 
-
-
 print(corr_matrix.round(2))
